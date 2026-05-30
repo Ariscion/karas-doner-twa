@@ -1,3 +1,7 @@
+// SUPABASE CONFIGURATION (Fill these in for production deployment)
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+
 // INITIALIZE TELEGRAM WEB APP
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
@@ -977,6 +981,49 @@ window.submitOrder = function(event) {
     spinner.classList.remove('hidden');
     submitBtn.disabled = true;
     
+    // Sync order to Supabase if connected
+    if (supabase) {
+        supabase.from('orders').insert({
+            order_num: newOrder.orderId,
+            telegram_id: currentUser ? String(currentUser.id) : 'guest',
+            client_name: newOrder.client.name,
+            client_phone: newOrder.client.phone,
+            client_address: newOrder.client.address,
+            client_kaspi: newOrder.client.kaspi,
+            shipping: newOrder.shipping,
+            total: newOrder.total,
+            status: newOrder.status
+        }).select().then(({ data, error }) => {
+            if (error) {
+                console.error("Error inserting order to Supabase:", error);
+            } else if (data && data.length > 0) {
+                const dbOrder = data[0];
+                newOrder.id = dbOrder.id; // Save UUID
+                saveOrders();
+                
+                // Now insert items
+                const insertItems = newOrder.items.map(item => ({
+                    order_id: dbOrder.id,
+                    item_id: item.itemId,
+                    name: item.name,
+                    selected_option: item.selectedOption,
+                    price: item.price,
+                    quantity: item.quantity,
+                    emoji: item.emoji
+                }));
+                
+                supabase.from('order_items').insert(insertItems).then(({ error: itemsError }) => {
+                    if (itemsError) {
+                        console.error("Error inserting items to Supabase:", itemsError);
+                    } else {
+                        console.log("Order synced to Supabase successfully!");
+                        subscribeToOrderUpdates();
+                    }
+                });
+            }
+        });
+    }
+    
     setTimeout(() => {
         // Clear Cart
         cart = [];
@@ -998,32 +1045,6 @@ window.submitOrder = function(event) {
         
         // Load Status Screen
         renderStatusScreen();
-        
-        // ========================================================
-        // ИНТЕГРАЦИЯ С БЭКЕНДОМ И БАЗОЙ ДАННЫХ (REST API)
-        // В будущем, вместо сохранения в localStorage, мы будем отправлять
-        // POST запрос на сервер, передавая данные авторизации Telegram
-        // для верификации на бэкенде:
-        //
-        // const initData = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp.initData : "";
-        // fetch('https://your-api-domain.com/api/orders', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'Authorization': `twa-init ${initData}`
-        //     },
-        //     body: JSON.stringify(newOrder)
-        // })
-        // .then(res => res.json())
-        // .then(savedOrder => {
-        //     // Сервер вернет сохраненный заказ с сгенерированным ID из базы
-        //     orders = orders.map(o => o.orderId === orderId ? savedOrder : o);
-        //     saveOrders();
-        //     selectedOrderId = savedOrder.orderId;
-        //     renderStatusScreen();
-        // });
-        // ========================================================
-        
         updateActiveOrderBanner();
     }, 1500);
 };
@@ -1048,8 +1069,14 @@ function getActiveOrders() {
 }
 
 // CHECK PERSISTED ORDERS ON REFRESH
-function checkExistingOrder() {
+async function checkExistingOrder() {
     loadOrders();
+    initSupabase();
+    
+    if (supabase) {
+        await syncOrdersFromSupabase();
+    }
+    
     const activeOrders = getActiveOrders();
     if (activeOrders.length > 0) {
         // Default to the first active order
@@ -1058,6 +1085,10 @@ function checkExistingOrder() {
         updateActiveOrderBanner();
     } else {
         updateActiveOrderBanner();
+    }
+    
+    if (supabase) {
+        subscribeToOrderUpdates();
     }
 }
 
@@ -1377,38 +1408,159 @@ function renderOrdersDrawer() {
 // В реальном приложении статус заказа меняется кассиром на бэкенде.
 // Чтобы клиент получал новые статусы мгновенно, мы используем:
 //
-// 1. SSE (Server-Sent Events) - Односторонний канал от сервера к клиенту:
-// function connectStatusSSE(orderId) {
-//     const initData = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp.initData : "";
-//     const eventSource = new EventSource(`https://your-api.com/api/orders/${orderId}/status-stream?auth=${encodeURIComponent(initData)}`);
-//     
-//     eventSource.onmessage = function(event) {
-//         const data = JSON.parse(event.data);
-//         
-//         // Находим заказ в локальном массиве и обновляем
-//         orders = orders.map(o => {
-//             if (o.orderId === orderId) {
-//                 o.status = data.status;
-//                 if (data.items) o.items = data.items;
-//                 o.total = data.total;
-//             }
-//             return o;
-//         });
-//         saveOrders();
-//         
-//         if (selectedOrderId === orderId) {
-//             renderStatusScreen();
-//         }
-//         updateActiveOrderBanner();
-//         
-//         if (data.status === 'completed' || data.status === 'cancelled') {
-//             eventSource.close();
-//         }
-//     };
-//     
-//     eventSource.onerror = function() {
-//         eventSource.close();
-//         setTimeout(() => connectStatusSSE(orderId), 5000);
-//     };
-// }
 // ========================================================
+// SUPABASE CLIENT & DB SYNC LOGIC
+// ========================================================
+
+function initSupabase() {
+    // 1. Try production hardcoded variables
+    let url = SUPABASE_URL;
+    let key = SUPABASE_ANON_KEY;
+    
+    // 2. Fallback to developer-configured settings in localStorage (useful for local sandbox testing)
+    if (!url || !key) {
+        url = localStorage.getItem('kd_sb_url') || '';
+        key = localStorage.getItem('kd_sb_key') || '';
+    }
+    
+    if (url && key) {
+        try {
+            supabase = window.supabase.createClient(url, key);
+            console.log("Supabase client initialized successfully!");
+        } catch (e) {
+            console.error("Failed to initialize Supabase client:", e);
+        }
+    }
+}
+
+async function syncOrdersFromSupabase() {
+    if (!supabase) return;
+    const tgId = currentUser ? String(currentUser.id) : 'guest';
+    
+    try {
+        const { data: dbOrders, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('telegram_id', tgId)
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        
+        if (dbOrders && dbOrders.length > 0) {
+            const syncedOrders = [];
+            for (const dbo of dbOrders) {
+                // Fetch items for this order
+                const { data: dbItems } = await supabase
+                    .from('order_items')
+                    .select('*')
+                    .eq('order_id', dbo.id);
+                    
+                syncedOrders.push({
+                    orderId: dbo.order_num,
+                    id: dbo.id,
+                    client: {
+                        name: dbo.client_name,
+                        phone: dbo.client_phone,
+                        address: dbo.client_address,
+                        kaspi: dbo.client_kaspi
+                    },
+                    items: dbItems ? dbItems.map(di => ({
+                        itemId: di.item_id,
+                        name: di.name,
+                        selectedOption: di.selected_option,
+                        price: parseFloat(di.price),
+                        quantity: di.quantity,
+                        emoji: di.emoji
+                    })) : [],
+                    shipping: parseFloat(dbo.shipping),
+                    total: parseFloat(dbo.total),
+                    status: dbo.status,
+                    createdAt: dbo.created_at
+                });
+            }
+            
+            orders = syncedOrders;
+            saveOrders();
+        }
+    } catch (e) {
+        console.error("Error syncing orders from database:", e);
+    }
+}
+
+let orderSubscription = null;
+
+function subscribeToOrderUpdates() {
+    if (!supabase || orders.length === 0) return;
+    
+    // Clean up previous channel if any
+    if (orderSubscription) {
+        supabase.removeChannel(orderSubscription);
+    }
+    
+    // Subscribe to order state updates
+    orderSubscription = supabase.channel('client-orders-updates')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, async (payload) => {
+            const updatedOrder = payload.new;
+            console.log("Realtime order update from cashier:", updatedOrder);
+            
+            // Check if this updated order belongs to the user
+            const localOrderIdx = orders.findIndex(o => o.orderId === updatedOrder.order_num || o.id === updatedOrder.id);
+            if (localOrderIdx === -1) return;
+            
+            // If the updated order is currently viewed, fetch new items too (in case cashier edited items)
+            if (selectedOrderId === updatedOrder.order_num) {
+                try {
+                    const { data: dbItems } = await supabase
+                        .from('order_items')
+                        .select('*')
+                        .eq('order_id', updatedOrder.id);
+                        
+                    orders = orders.map(o => {
+                        if (o.orderId === updatedOrder.order_num) {
+                            return {
+                                ...o,
+                                id: updatedOrder.id,
+                                status: updatedOrder.status,
+                                total: parseFloat(updatedOrder.total),
+                                items: dbItems ? dbItems.map(di => ({
+                                    itemId: di.item_id,
+                                    name: di.name,
+                                    selectedOption: di.selected_option,
+                                    price: parseFloat(di.price),
+                                    quantity: di.quantity,
+                                    emoji: di.emoji
+                                })) : o.items
+                            };
+                        }
+                        return o;
+                    });
+                    
+                    saveOrders();
+                    renderStatusScreen();
+                } catch(e) {
+                    console.error("Error loading updated order items:", e);
+                    // Fallback: just update status and total
+                    updateLocalOrderStatusAndTotal(updatedOrder);
+                }
+            } else {
+                updateLocalOrderStatusAndTotal(updatedOrder);
+            }
+        })
+        .subscribe();
+}
+
+function updateLocalOrderStatusAndTotal(updatedOrder) {
+    orders = orders.map(o => {
+        if (o.orderId === updatedOrder.order_num || o.id === updatedOrder.id) {
+            return {
+                ...o,
+                status: updatedOrder.status,
+                total: parseFloat(updatedOrder.total)
+            };
+        }
+        return o;
+    });
+    saveOrders();
+    updateActiveOrderBanner();
+}
+

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ Панель Кассира | Kara's Doner</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- HEADER -->
+        <header class="admin-header">
+            <div class="header-left">
+                <i class="fa-solid fa-fire-burner logo-icon"></i>
+                <div>
+                    <h1>Kara's Doner</h1>
+                    <p>Панель Кассира (Realtime)</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <!-- Shift Stats Summary -->
+                <div class="shift-stats-box">
+                    <div class="stat-item">
+                        <span class="stat-label">Продажи за смену:</span>
+                        <span class="stat-value" id="shift-sales">0 ₸</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Заказов выполнено:</span>
+                        <span class="stat-value" id="shift-orders-count">0</span>
+                    </div>
+                </div>
+                <!-- Connection Status Indicator -->
+                <div class="conn-status-badge disconnected" id="conn-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Загрузка...</span>
+                </div>
+                <!-- Settings Trigger -->
+                <button class="btn-icon" onclick="toggleSettingsModal()" title="Настройки подключения">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="admin-main">
+            <!-- LEFT PANEL: Orders Queue -->
+            <section class="orders-panel">
+                <div class="panel-header">
+                    <h2>Очередь заказов</h2>
+                    <div class="queue-filter">
+                        <button class="filter-tab active" data-filter="active">Активные</button>
+                        <button class="filter-tab" data-filter="archive">Архив</button>
+                    </div>
+                </div>
+                <div class="orders-list-wrapper" id="admin-orders-list">
+                    <!-- Loaded dynamically -->
+                    <div class="loading-state">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Загрузка заказов...
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Order Details -->
+            <section class="details-panel" id="admin-details-panel">
+                <div class="no-selection-state">
+                    <i class="fa-solid fa-receipt"></i>
+                    <h3>Выберите заказ для работы</h3>
+                    <p>Здесь отобразятся подробности заказа, контакты и управление статусом</p>
+                </div>
+                <!-- Populated dynamically when order is selected -->
+            </section>
+        </main>
+
+        <!-- SETTINGS MODAL (Supabase Credentials Configuration) -->
+        <div class="modal-backdrop" id="settings-backdrop">
+            <div class="admin-modal">
+                <div class="modal-header">
+                    <h3>Настройки Supabase</h3>
+                    <button class="btn-close-modal" onclick="toggleSettingsModal()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <p class="settings-hint">Введите параметры подключения к базе данных Supabase. Эти данные сохраняются локально в вашем браузере.</p>
+                    <div class="form-group">
+                        <label for="set-supabase-url">Supabase URL</label>
+                        <input type="text" id="set-supabase-url" placeholder="https://xxxxxx.supabase.co">
+                    </div>
+                    <div class="form-group">
+                        <label for="set-supabase-key">Supabase Anon Key</label>
+                        <input type="password" id="set-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                    </div>
+                    <button class="btn-primary" onclick="saveConnectionSettings()">Сохранить настройки</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT ORDER ITEMS MODAL -->
+        <div class="modal-backdrop" id="edit-order-backdrop">
+            <div class="admin-modal edit-modal">
+                <div class="modal-header">
+                    <h3>Редактирование заказа <span id="edit-modal-order-num">#KD-0000</span></h3>
+                    <button class="btn-close-modal" onclick="closeEditOrderModal()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="edit-items-table">
+                        <div class="table-header">
+                            <span>Название позиции</span>
+                            <span>Размер / Опция</span>
+                            <span>Количество</span>
+                            <span>Цена</span>
+                            <span>Действия</span>
+                        </div>
+                        <div class="edit-items-list" id="edit-items-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Add item control -->
+                    <div class="add-item-control-row">
+                        <h4>Добавить позицию:</h4>
+                        <div class="add-controls">
+                            <select id="add-select-item" onchange="updateAddOptionsSelect()">
+                                <!-- Populated dynamically from menu items -->
+                            </select>
+                            <select id="add-select-option">
+                                <!-- Populated based on selection -->
+                            </select>
+                            <input type="number" id="add-item-qty" value="1" min="1" max="20">
+                            <button class="btn-add-item-to-list" onclick="addNewItemToEditingOrder()"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="edit-totals-row">
+                        <span>Новый подитог: <strong id="edit-subtotal-val">0 ₸</strong></span>
+                        <span>Доставка: <strong>500 ₸</strong></span>
+                        <span>Итого: <strong id="edit-grand-val" class="highlight-cash">500 ₸</strong></span>
+                    </div>
+
+                    <div class="edit-modal-actions">
+                        <button class="btn-secondary" onclick="closeEditOrderModal()">Отмена</button>
+                        <button class="btn-primary" onclick="saveEditedOrder()">Применить изменения</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio notification element for new orders -->
+    <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav" preload="auto"></audio>
+
+    <script src="admin.js"></script>
+</body>
+</html>
