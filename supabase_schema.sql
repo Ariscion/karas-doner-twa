@@ -36,7 +36,14 @@ CREATE TABLE IF NOT EXISTS order_items (
 alter publication supabase_realtime add table orders;
 alter publication supabase_realtime add table order_items;
 
--- 4. Enable Row Level Security (RLS) policies (Optional, for production)
+-- 4. Grant privileges to the anon and authenticated roles
+-- This is required so the client-side JS (under the anon role) can access the tables.
+GRANT ALL ON public.orders TO anon;
+GRANT ALL ON public.order_items TO anon;
+GRANT ALL ON public.orders TO authenticated;
+GRANT ALL ON public.order_items TO authenticated;
+
+-- 5. Enable Row Level Security (RLS) policies (Optional, for production)
 -- For local testing, you can read/write without RLS or by setting RLS policies.
 -- If you enable RLS, run these policies to allow anonymous users to read and write:
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
