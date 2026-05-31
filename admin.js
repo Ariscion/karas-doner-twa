@@ -52,7 +52,7 @@ const MENU = {
 
 // CONFIGURATION (Hardcoded for production deployment)
 const SUPABASE_URL = "https://xibnkismcwrtwlhjgwij.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_4fMbdDcnORcshoBKOm5Y2A_KZ6SMs2n";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpYm5rdWFtY3dydHd0aHVqd2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDEwMjIsImV4cCI6MjA5NTcxNzAyMn0.31M99Mkxa1uKt1gRo9nAEagm8veLhDxsWwqLPQobwYI";
 
 // CONSTANTS
 const SHIPPING_COST = 500;
@@ -91,10 +91,10 @@ window.addEventListener('DOMContentLoaded', () => {
 function loadSettings() {
     supabaseUrl = SUPABASE_URL || localStorage.getItem('kd_sb_url') || '';
     supabaseKey = SUPABASE_ANON_KEY || localStorage.getItem('kd_sb_key') || '';
-    
+
     document.getElementById('set-supabase-url').value = supabaseUrl;
     document.getElementById('set-supabase-key').value = supabaseKey;
-    
+
     if (supabaseUrl && supabaseKey) {
         initSupabase();
     }
@@ -115,7 +115,7 @@ function setConnectionState(state, text) {
     connStatusBadge.querySelector('.status-text').innerText = text;
 }
 
-window.toggleSettingsModal = function(show = null) {
+window.toggleSettingsModal = function (show = null) {
     if (show === true) {
         settingsBackdrop.classList.add('open');
     } else if (show === false) {
@@ -125,24 +125,24 @@ window.toggleSettingsModal = function(show = null) {
     }
 };
 
-window.saveConnectionSettings = function() {
+window.saveConnectionSettings = function () {
     const url = document.getElementById('set-supabase-url').value.trim();
     const key = document.getElementById('set-supabase-key').value.trim();
-    
+
     if (!url || !key) {
         alert("Заполните оба поля!");
         return;
     }
-    
+
     localStorage.setItem('kd_sb_url', url);
     localStorage.setItem('kd_sb_key', key);
-    
+
     supabaseUrl = url;
     supabaseKey = key;
-    
+
     initSupabase();
     toggleSettingsModal(false);
-    
+
     if (supabase) {
         loadOrdersData();
         setupRealtimeSubscription();
@@ -153,9 +153,9 @@ window.saveConnectionSettings = function() {
 function initAddSelects() {
     const itemSelect = document.getElementById('add-select-item');
     if (!itemSelect) return;
-    
+
     itemSelect.innerHTML = '';
-    
+
     // Add all categories items
     Object.keys(MENU).forEach(cat => {
         MENU[cat].forEach(item => {
@@ -165,18 +165,18 @@ function initAddSelects() {
             itemSelect.appendChild(opt);
         });
     });
-    
+
     updateAddOptionsSelect();
 }
 
-window.updateAddOptionsSelect = function() {
+window.updateAddOptionsSelect = function () {
     const itemSelect = document.getElementById('add-select-item');
     const optionSelect = document.getElementById('add-select-option');
     if (!itemSelect || !optionSelect) return;
-    
+
     const selectedId = itemSelect.value;
     const item = findMenuItemById(selectedId);
-    
+
     optionSelect.innerHTML = '';
     if (item && item.options) {
         item.options.forEach(opt => {
@@ -211,22 +211,22 @@ function initFilters() {
 // DATABASE LOADING
 async function loadOrdersData() {
     if (!supabase) return;
-    
+
     setConnectionState('connected', 'Загрузка...');
-    
+
     try {
         // Query orders table
         const { data: dbOrders, error } = await supabase
             .from('orders')
             .select('*')
             .order('created_at', { ascending: false });
-            
+
         if (error) throw error;
-        
+
         orders = dbOrders || [];
         renderOrdersList();
         calculateShiftStats();
-        
+
         setConnectionState('connected', 'Активен');
     } catch (e) {
         console.error("Error loading orders:", e);
@@ -237,21 +237,21 @@ async function loadOrdersData() {
 // REALTIME SUBSCRIPTION
 function setupRealtimeSubscription() {
     if (!supabase) return;
-    
+
     supabase.channel('orders-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
             console.log('Realtime change on orders:', payload);
-            
+
             const event = payload.eventType;
             const newRecord = payload.new;
             const oldRecord = payload.old;
-            
+
             if (event === 'INSERT') {
                 orders.unshift(newRecord);
                 playNotificationSound();
             } else if (event === 'UPDATE') {
                 orders = orders.map(o => o.id === newRecord.id ? { ...o, ...newRecord } : o);
-                
+
                 // If selected order was updated, refresh details
                 if (selectedOrderId && orders.find(o => o.id === selectedOrderId)?.id === newRecord.id) {
                     await selectOrder(newRecord.id, false); // Reload details without loader
@@ -263,7 +263,7 @@ function setupRealtimeSubscription() {
                     renderOrderDetails();
                 }
             }
-            
+
             renderOrdersList();
             calculateShiftStats();
         })
@@ -281,17 +281,17 @@ function playNotificationSound() {
 function calculateShiftStats() {
     // Shifts total completed today since 00:00:00 local time
     const startOfToday = new Date();
-    startOfToday.setHours(0,0,0,0);
-    
+    startOfToday.setHours(0, 0, 0, 0);
+
     const shiftOrders = orders.filter(o => {
         if (o.status !== 'completed') return false;
         const oDate = new Date(o.created_at);
         return oDate >= startOfToday;
     });
-    
+
     let totalSales = 0;
     shiftOrders.forEach(o => totalSales += parseFloat(o.total || 0));
-    
+
     document.getElementById('shift-sales').innerText = `${totalSales} ₸`;
     document.getElementById('shift-orders-count').innerText = shiftOrders.length;
 }
@@ -299,14 +299,14 @@ function calculateShiftStats() {
 // RENDER ORDER QUEUE
 function renderOrdersList() {
     ordersListContainer.innerHTML = '';
-    
+
     let filtered = [];
     if (currentFilter === 'active') {
         filtered = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
     } else {
         filtered = orders.filter(o => o.status === 'completed' || o.status === 'cancelled');
     }
-    
+
     if (filtered.length === 0) {
         ordersListContainer.innerHTML = `
             <div class="empty-state">
@@ -316,12 +316,12 @@ function renderOrdersList() {
         `;
         return;
     }
-    
+
     filtered.forEach(o => {
         const card = document.createElement('div');
         card.className = `admin-order-card ${o.id === selectedOrderId ? 'selected' : ''}`;
         card.onclick = () => selectOrder(o.id);
-        
+
         const statusLabels = {
             'pending_confirm': 'Подтверждение',
             'pending_payment': 'Оплата',
@@ -330,7 +330,7 @@ function renderOrdersList() {
             'completed': 'Выполнен',
             'cancelled': 'Отменен'
         };
-        
+
         card.innerHTML = `
             <div class="card-header-row">
                 <span class="order-num">${escapeHtml(o.order_num)}</span>
@@ -349,11 +349,11 @@ function renderOrdersList() {
 // LOAD & SELECT SPECIFIC ORDER DETAILS
 async function selectOrder(id, showLoader = true) {
     selectedOrderId = id;
-    
+
     // Highlight in list
     document.querySelectorAll('.admin-order-card').forEach(card => card.classList.remove('selected'));
     renderOrdersList();
-    
+
     if (showLoader) {
         detailsPanel.innerHTML = `
             <div class="loading-state">
@@ -361,19 +361,19 @@ async function selectOrder(id, showLoader = true) {
             </div>
         `;
     }
-    
+
     const order = orders.find(o => o.id === id);
     if (!order) return;
-    
+
     try {
         // Fetch items from order_items table in Supabase
         const { data: dbItems, error } = await supabase
             .from('order_items')
             .select('*')
             .eq('order_id', order.id);
-            
+
         if (error) throw error;
-        
+
         order.items = dbItems || [];
         renderOrderDetails(order);
     } catch (e) {
@@ -399,7 +399,7 @@ function renderOrderDetails(order = null) {
         `;
         return;
     }
-    
+
     const statusLabels = {
         'pending_confirm': 'Подтверждение',
         'pending_payment': 'Оплата',
@@ -408,7 +408,7 @@ function renderOrderDetails(order = null) {
         'completed': 'Выполнен',
         'cancelled': 'Отменен'
     };
-    
+
     // Items table content
     let itemsHtml = '';
     order.items.forEach(item => {
@@ -421,9 +421,9 @@ function renderOrderDetails(order = null) {
             </div>
         `;
     });
-    
+
     const subtotal = order.total - SHIPPING_COST;
-    
+
     // Status Action Button configuration
     let statusActionBtn = '';
     if (order.status === 'pending_confirm') {
@@ -455,7 +455,7 @@ function renderOrderDetails(order = null) {
             </button>
         `;
     }
-    
+
     // Cancel action is always present if order is active
     let cancelActionBtn = '';
     if (order.status !== 'completed' && order.status !== 'cancelled') {
@@ -466,7 +466,7 @@ function renderOrderDetails(order = null) {
             </button>
         `;
     }
-    
+
     // Edit items is only allowed if order is in progress
     const showEditBtn = (order.status !== 'completed' && order.status !== 'cancelled');
     const editBtnHtml = showEditBtn ? `
@@ -474,7 +474,7 @@ function renderOrderDetails(order = null) {
             <i class="fa-solid fa-pen-to-square"></i> Редактировать
         </button>
     ` : '';
-    
+
     detailsPanel.innerHTML = `
         <div class="order-details-container">
             <!-- Header Row -->
@@ -561,15 +561,15 @@ function renderOrderDetails(order = null) {
 }
 
 // UPDATE ORDER STATUS IN DATABASE
-window.updateOrderStatus = async function(newStatus) {
+window.updateOrderStatus = async function (newStatus) {
     if (!selectedOrderId || !supabase) return;
-    
+
     try {
         const { error } = await supabase
             .from('orders')
             .update({ status: newStatus })
             .eq('id', selectedOrderId);
-            
+
         if (error) throw error;
         console.log(`Order status updated to ${newStatus}`);
     } catch (e) {
@@ -579,19 +579,19 @@ window.updateOrderStatus = async function(newStatus) {
 };
 
 // EDIT ORDER ITEMS MODAL ACTIONS
-window.openEditOrderModal = function() {
+window.openEditOrderModal = function () {
     const order = orders.find(o => o.id === selectedOrderId);
     if (!order) return;
-    
+
     // Deep clone order
     editingOrder = JSON.parse(JSON.stringify(order));
-    
+
     document.getElementById('edit-modal-order-num').innerText = editingOrder.order_num;
     editOrderBackdrop.classList.add('open');
     renderEditModalItems();
 };
 
-window.closeEditOrderModal = function() {
+window.closeEditOrderModal = function () {
     editOrderBackdrop.classList.remove('open');
     editingOrder = null;
 };
@@ -599,9 +599,9 @@ window.closeEditOrderModal = function() {
 function renderEditModalItems() {
     const list = document.getElementById('edit-items-list');
     if (!list || !editingOrder) return;
-    
+
     list.innerHTML = '';
-    
+
     let subtotal = 0;
     editingOrder.items.forEach((item, idx) => {
         const row = document.createElement('div');
@@ -616,50 +616,50 @@ function renderEditModalItems() {
         list.appendChild(row);
         subtotal += item.price * item.quantity;
     });
-    
+
     const grand = subtotal + SHIPPING_COST;
     editingOrder.total = grand;
-    
+
     document.getElementById('edit-subtotal-val').innerText = `${subtotal} ₸`;
     document.getElementById('edit-grand-val').innerText = `${grand} ₸`;
 }
 
-window.changeEditItemQty = function(index, value) {
+window.changeEditItemQty = function (index, value) {
     if (!editingOrder) return;
-    
+
     const qty = parseInt(value);
     if (isNaN(qty) || qty <= 0) return;
-    
+
     editingOrder.items[index].quantity = qty;
     renderEditModalItems();
 };
 
-window.deleteEditItem = function(index) {
+window.deleteEditItem = function (index) {
     if (!editingOrder) return;
-    
+
     editingOrder.items.splice(index, 1);
     renderEditModalItems();
 };
 
-window.addNewItemToEditingOrder = function() {
+window.addNewItemToEditingOrder = function () {
     if (!editingOrder) return;
-    
+
     const itemSelect = document.getElementById('add-select-item');
     const optionSelect = document.getElementById('add-select-option');
     const qtyInput = document.getElementById('add-item-qty');
-    
+
     const itemId = itemSelect.value;
     const optionLabel = optionSelect.value;
     const quantity = parseInt(qtyInput.value);
-    
+
     if (isNaN(quantity) || quantity <= 0) return;
-    
+
     const item = findMenuItemById(itemId);
     if (!item) return;
-    
+
     const option = item.options.find(o => o.label === optionLabel);
     if (!option) return;
-    
+
     // Check if item is already in list, if so add quantity
     const existingIdx = editingOrder.items.findIndex(i => i.item_id === itemId && i.selected_option === optionLabel);
     if (existingIdx > -1) {
@@ -674,16 +674,16 @@ window.addNewItemToEditingOrder = function() {
             emoji: item.emoji
         });
     }
-    
+
     // Reset qty input
     qtyInput.value = 1;
     renderEditModalItems();
 };
 
 // SAVE EDITED ORDER TO SUPABASE
-window.saveEditedOrder = async function() {
+window.saveEditedOrder = async function () {
     if (!editingOrder || !supabase) return;
-    
+
     try {
         // Start a database operation:
         // 1. Delete all old items in order_items for this order
@@ -691,9 +691,9 @@ window.saveEditedOrder = async function() {
             .from('order_items')
             .delete()
             .eq('order_id', editingOrder.id);
-            
+
         if (deleteError) throw deleteError;
-        
+
         // 2. Insert new items in order_items
         if (editingOrder.items.length > 0) {
             // Map items to include order_id
@@ -706,25 +706,25 @@ window.saveEditedOrder = async function() {
                 quantity: item.quantity,
                 emoji: item.emoji
             }));
-            
+
             const { error: insertError } = await supabase
                 .from('order_items')
                 .insert(insertPayload);
-                
+
             if (insertError) throw insertError;
         }
-        
+
         // 3. Update total in orders table
         const { error: updateError } = await supabase
             .from('orders')
             .update({ total: editingOrder.total })
             .eq('id', editingOrder.id);
-            
+
         if (updateError) throw updateError;
-        
+
         closeEditOrderModal();
         alert("Заказ успешно отредактирован!");
-        
+
         // Refresh detail view
         await selectOrder(editingOrder.id, false);
     } catch (e) {
@@ -739,7 +739,7 @@ function formatOrderDate(isoString) {
     try {
         const date = new Date(isoString);
         const ruMonths = [
-            'янв', 'фев', 'мар', 'апр', 'мая', 'июн', 
+            'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
             'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
         ];
         const day = date.getDate();
@@ -747,7 +747,7 @@ function formatOrderDate(isoString) {
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         return `${day} ${month}, ${hours}:${minutes}`;
-    } catch(e) {
+    } catch (e) {
         return '';
     }
 }
@@ -759,7 +759,7 @@ function formatOrderTime(isoString) {
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         return `${hours}:${minutes}`;
-    } catch(e) {
+    } catch (e) {
         return '';
     }
 }

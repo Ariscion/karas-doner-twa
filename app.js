@@ -1,6 +1,6 @@
 // SUPABASE CONFIGURATION (Fill these in for production deployment)
 const SUPABASE_URL = "https://xibnkismcwrtwlhjgwij.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_4fMbdDcnORcshoBKOm5Y2A_KZ6SMs2n";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpYm5rdWFtY3dydHd0aHVqd2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDEwMjIsImV4cCI6MjA5NTcxNzAyMn0.31M99Mkxa1uKt1gRo9nAEagm8veLhDxsWwqLPQobwYI";
 
 // INITIALIZE TELEGRAM WEB APP
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
