@@ -50,6 +50,10 @@ const MENU = {
     ]
 };
 
+// CONFIGURATION (Hardcoded for production deployment)
+const SUPABASE_URL = "https://xibnkismcwrtwlhjgwij.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_4fMbdDcnORcshoBKOm5Y2A_KZ6SMs2n";
+
 // CONSTANTS
 const SHIPPING_COST = 500;
 
@@ -85,8 +89,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // SETTINGS & CONNECTION MANAGEMENT
 function loadSettings() {
-    supabaseUrl = localStorage.getItem('kd_sb_url') || '';
-    supabaseKey = localStorage.getItem('kd_sb_key') || '';
+    supabaseUrl = SUPABASE_URL || localStorage.getItem('kd_sb_url') || '';
+    supabaseKey = SUPABASE_ANON_KEY || localStorage.getItem('kd_sb_key') || '';
     
     document.getElementById('set-supabase-url').value = supabaseUrl;
     document.getElementById('set-supabase-key').value = supabaseKey;
