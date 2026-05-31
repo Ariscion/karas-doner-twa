@@ -60,7 +60,7 @@ const SHIPPING_COST = 500;
 // STATE
 let supabaseUrl = '';
 let supabaseKey = '';
-let supabase = null;
+let supabaseClient = null;
 
 let orders = [];
 let selectedOrderId = null;
@@ -79,7 +79,7 @@ window.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     initFilters();
     initAddSelects();
-    if (supabase) {
+    if (supabaseClient) {
         loadOrdersData();
         setupRealtimeSubscription();
     } else {
@@ -102,7 +102,7 @@ function loadSettings() {
 
 function initSupabase() {
     try {
-        supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         setConnectionState('connected', 'Подключено');
     } catch (e) {
         console.error(e);
@@ -143,7 +143,7 @@ window.saveConnectionSettings = function () {
     initSupabase();
     toggleSettingsModal(false);
 
-    if (supabase) {
+    if (supabaseClient) {
         loadOrdersData();
         setupRealtimeSubscription();
     }
@@ -210,13 +210,13 @@ function initFilters() {
 
 // DATABASE LOADING
 async function loadOrdersData() {
-    if (!supabase) return;
+    if (!supabaseClient) return;
 
     setConnectionState('connected', 'Загрузка...');
 
     try {
         // Query orders table
-        const { data: dbOrders, error } = await supabase
+        const { data: dbOrders, error } = await supabaseClient
             .from('orders')
             .select('*')
             .order('created_at', { ascending: false });
@@ -236,9 +236,9 @@ async function loadOrdersData() {
 
 // REALTIME SUBSCRIPTION
 function setupRealtimeSubscription() {
-    if (!supabase) return;
+    if (!supabaseClient) return;
 
-    supabase.channel('orders-realtime')
+    supabaseClient.channel('orders-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
             console.log('Realtime change on orders:', payload);
 
@@ -367,7 +367,7 @@ async function selectOrder(id, showLoader = true) {
 
     try {
         // Fetch items from order_items table in Supabase
-        const { data: dbItems, error } = await supabase
+        const { data: dbItems, error } = await supabaseClient
             .from('order_items')
             .select('*')
             .eq('order_id', order.id);
@@ -562,10 +562,10 @@ function renderOrderDetails(order = null) {
 
 // UPDATE ORDER STATUS IN DATABASE
 window.updateOrderStatus = async function (newStatus) {
-    if (!selectedOrderId || !supabase) return;
+    if (!selectedOrderId || !supabaseClient) return;
 
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('orders')
             .update({ status: newStatus })
             .eq('id', selectedOrderId);
@@ -682,12 +682,12 @@ window.addNewItemToEditingOrder = function () {
 
 // SAVE EDITED ORDER TO SUPABASE
 window.saveEditedOrder = async function () {
-    if (!editingOrder || !supabase) return;
+    if (!editingOrder || !supabaseClient) return;
 
     try {
         // Start a database operation:
         // 1. Delete all old items in order_items for this order
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await supabaseClient
             .from('order_items')
             .delete()
             .eq('order_id', editingOrder.id);
@@ -707,7 +707,7 @@ window.saveEditedOrder = async function () {
                 emoji: item.emoji
             }));
 
-            const { error: insertError } = await supabase
+            const { error: insertError } = await supabaseClient
                 .from('order_items')
                 .insert(insertPayload);
 
@@ -715,7 +715,7 @@ window.saveEditedOrder = async function () {
         }
 
         // 3. Update total in orders table
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseClient
             .from('orders')
             .update({ total: editingOrder.total })
             .eq('id', editingOrder.id);
