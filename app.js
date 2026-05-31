@@ -1,6 +1,6 @@
 // SUPABASE CONFIGURATION (Fill these in for production deployment)
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://xibnkismcwrtwlhjgwij.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_4fMbdDcnORcshoBKOm5Y2A_KZ6SMs2n";
 
 // INITIALIZE TELEGRAM WEB APP
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
@@ -431,18 +431,18 @@ function authenticateUser() {
     if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
         currentUser = tg.initDataUnsafe.user;
         console.log("Authenticated Telegram User:", currentUser);
-        
+
         // Auto pre-fill name input if empty
         const nameInput = document.getElementById('input-name');
         if (nameInput && !nameInput.value) {
             nameInput.value = currentUser.first_name || "";
         }
-        
+
         showToast(`С возвращением, ${currentUser.first_name}!`, "fa-regular fa-handshake");
     } else {
         console.log("Browser mode: running as guest.");
     }
-    
+
     // Load checkout profiles suggestions
     loadSavedProfiles();
 }
@@ -457,15 +457,15 @@ function renderProfilesChips() {
     const container = document.getElementById('saved-profiles-container');
     const chipsBox = document.getElementById('profiles-chips');
     if (!container || !chipsBox) return;
-    
+
     if (savedProfiles.length === 0) {
         container.classList.add('hidden');
         return;
     }
-    
+
     container.classList.remove('hidden');
     chipsBox.innerHTML = '';
-    
+
     savedProfiles.forEach((profile, idx) => {
         const chip = document.createElement('div');
         chip.className = 'profile-chip';
@@ -481,20 +481,20 @@ function renderProfilesChips() {
     });
 }
 
-window.autofillForm = function(index) {
+window.autofillForm = function (index) {
     triggerHaptic();
     const profile = savedProfiles[index];
     if (!profile) return;
-    
+
     document.getElementById('input-name').value = profile.name;
     document.getElementById('input-phone').value = profile.phone;
     document.getElementById('input-address').value = profile.address;
     document.getElementById('input-kaspi').value = profile.kaspi;
-    
+
     showToast("Данные формы заполнены!", "fa-solid fa-circle-check");
 };
 
-window.deleteProfile = function(index) {
+window.deleteProfile = function (index) {
     triggerHaptic();
     savedProfiles.splice(index, 1);
     const key = currentUser ? `kd_profiles_${currentUser.id}` : 'kd_profiles_guest';
@@ -506,7 +506,7 @@ window.deleteProfile = function(index) {
 function saveCurrentProfile(name, phone, address, kaspi) {
     // Check if duplicate (match name and address)
     const duplicateIndex = savedProfiles.findIndex(p => p.name === name && p.address === address);
-    
+
     if (duplicateIndex > -1) {
         // Update phone and kaspi
         savedProfiles[duplicateIndex].phone = phone;
@@ -515,12 +515,12 @@ function saveCurrentProfile(name, phone, address, kaspi) {
         // Add new profile to the top of list
         savedProfiles.unshift({ name, phone, address, kaspi });
     }
-    
+
     // Limit to 5 entries
     if (savedProfiles.length > 5) {
         savedProfiles.pop();
     }
-    
+
     const key = currentUser ? `kd_profiles_${currentUser.id}` : 'kd_profiles_guest';
     localStorage.setItem(key, JSON.stringify(savedProfiles));
     renderProfilesChips();
@@ -575,7 +575,7 @@ function showToast(message, iconClass = "fa-solid fa-bell") {
 // THROTTLE HELPER FOR PERFORMANCE OPTIMIZATION
 function throttle(func, limit) {
     let inThrottle;
-    return function() {
+    return function () {
         const args = arguments;
         const context = this;
         if (!inThrottle) {
@@ -589,12 +589,12 @@ function throttle(func, limit) {
 // CATEGORY NAVIGATION SCROLLER
 function initCategoryScroller() {
     const tabs = document.querySelectorAll('.category-tab');
-    
+
     // Add throttled scroll listener to catalog sections to auto-activate tabs
     window.addEventListener('scroll', throttle(() => {
         let currentActiveSection = 'doners';
         let minDistance = 999999;
-        
+
         Object.keys(MENU).forEach(cat => {
             const el = document.getElementById(`cat-${cat}`);
             if (el) {
@@ -607,7 +607,7 @@ function initCategoryScroller() {
                 }
             }
         });
-        
+
         tabs.forEach(tab => {
             if (tab.dataset.category === currentActiveSection) {
                 tab.classList.add('active');
@@ -618,14 +618,14 @@ function initCategoryScroller() {
             }
         });
     }, 100));
-    
+
     // Click events to scroll directly to the category heading
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             triggerHaptic();
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-            
+
             const cat = tab.dataset.category;
             const targetEl = document.getElementById(`cat-${cat}`);
             if (targetEl) {
@@ -642,17 +642,17 @@ function initCatalog() {
     Object.keys(MENU).forEach(categoryKey => {
         const grid = document.getElementById(`grid-${categoryKey}`);
         if (!grid) return;
-        
+
         grid.innerHTML = '';
-        
+
         MENU[categoryKey].forEach(item => {
             // Set default selected option for card
             selectedOptionsState[item.id] = 0;
-            
+
             const card = document.createElement('div');
             card.className = 'food-card';
             card.dataset.itemId = item.id;
-            
+
             // Build size selector layout if there's multiple options
             let sizeSelectorHtml = '';
             if (item.options.length > 1) {
@@ -667,7 +667,7 @@ function initCatalog() {
                 });
                 sizeSelectorHtml += `</div>`;
             }
-            
+
             // Image or emoji fallback
             let imgHtml = '';
             if (item.img) {
@@ -675,9 +675,9 @@ function initCatalog() {
             } else {
                 imgHtml = `<div class="food-emoji">${item.emoji}</div>`;
             }
-            
+
             const defaultPrice = item.options[0].price;
-            
+
             card.innerHTML = `
                 <div class="food-card-left">
                     <h3 class="food-card-title">${item.name}</h3>
@@ -696,34 +696,34 @@ function initCatalog() {
                     ${imgHtml}
                 </div>
             `;
-            
+
             grid.appendChild(card);
         });
     });
 }
 
 // HANDLE CARD SIZE OPTION TOGGLES
-window.changeCardOption = function(itemId, optionIndex, buttonElement) {
+window.changeCardOption = function (itemId, optionIndex, buttonElement) {
     triggerHaptic();
-    
+
     // Toggle active state in UI
     const container = buttonElement.parentElement;
     container.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
     buttonElement.classList.add('active');
-    
+
     // Update State
     selectedOptionsState[itemId] = optionIndex;
-    
+
     // Find Item Details
     const item = findItemById(itemId);
     if (!item) return;
-    
+
     // Update Price Display
     const priceDisplay = document.getElementById(`price-val-${itemId}`);
     if (priceDisplay) {
         priceDisplay.innerText = `${item.options[optionIndex].price} ₸`;
     }
-    
+
     // If the item is already in the cart, sync card counter state with the newly chosen option
     updateCatalogBtnState(itemId);
 };
@@ -742,14 +742,14 @@ function updateCatalogBtnState(itemId) {
     const optionIndex = selectedOptionsState[itemId];
     const item = findItemById(itemId);
     if (!item) return;
-    
+
     const optionLabel = item.options[optionIndex].label;
     const wrapper = document.getElementById(`btn-wrapper-${itemId}`);
     if (!wrapper) return;
-    
+
     // Look for matching item in cart
     const cartIndex = cart.findIndex(c => c.itemId === itemId && c.selectedOption === optionLabel);
-    
+
     if (cartIndex > -1) {
         const qty = cart[cartIndex].quantity;
         wrapper.innerHTML = `
@@ -769,18 +769,18 @@ function updateCatalogBtnState(itemId) {
 }
 
 // CART ACTIONS
-window.addItemToCartFromCatalog = function(itemId) {
+window.addItemToCartFromCatalog = function (itemId) {
     triggerHaptic();
     const optionIndex = selectedOptionsState[itemId];
     const item = findItemById(itemId);
     if (!item) return;
-    
+
     const optionLabel = item.options[optionIndex].label;
     const price = item.options[optionIndex].price;
-    
+
     // Check if duplicate
     const existingIndex = cart.findIndex(c => c.itemId === itemId && c.selectedOption === optionLabel);
-    
+
     if (existingIndex > -1) {
         cart[existingIndex].quantity += 1;
     } else {
@@ -793,45 +793,45 @@ window.addItemToCartFromCatalog = function(itemId) {
             emoji: item.emoji
         });
     }
-    
+
     showToast(`Добавлено: ${item.name} (${optionLabel})`, "fa-solid fa-cart-plus");
     updateCartUI();
     updateCatalogBtnState(itemId);
 };
 
-window.adjustItemQtyFromCatalog = function(itemId, optionLabel, change) {
+window.adjustItemQtyFromCatalog = function (itemId, optionLabel, change) {
     triggerHaptic();
     const existingIndex = cart.findIndex(c => c.itemId === itemId && c.selectedOption === optionLabel);
     if (existingIndex === -1) return;
-    
+
     cart[existingIndex].quantity += change;
-    
+
     if (cart[existingIndex].quantity <= 0) {
         cart.splice(existingIndex, 1);
         showToast("Удалено из корзины", "fa-solid fa-trash");
     }
-    
+
     updateCartUI();
     updateCatalogBtnState(itemId);
 };
 
-window.adjustItemQtyFromCart = function(itemId, optionLabel, change) {
+window.adjustItemQtyFromCart = function (itemId, optionLabel, change) {
     triggerHaptic();
     const existingIndex = cart.findIndex(c => c.itemId === itemId && c.selectedOption === optionLabel);
     if (existingIndex === -1) return;
-    
+
     cart[existingIndex].quantity += change;
-    
+
     if (cart[existingIndex].quantity <= 0) {
         cart.splice(existingIndex, 1);
         showToast("Удалено из корзины", "fa-solid fa-trash");
     }
-    
+
     updateCartUI();
     updateCatalogBtnState(itemId);
 };
 
-window.clearCart = function() {
+window.clearCart = function () {
     triggerHaptic();
     cart = [];
     updateCartUI();
@@ -846,12 +846,12 @@ window.clearCart = function() {
 function updateCartUI() {
     let totalQty = 0;
     let subtotal = 0;
-    
+
     cart.forEach(item => {
         totalQty += item.quantity;
         subtotal += item.price * item.quantity;
     });
-    
+
     // Update floating cart strip
     if (totalQty > 0) {
         cartStrip.classList.add('visible');
@@ -864,24 +864,24 @@ function updateCartUI() {
         cartStrip.classList.remove('visible');
         closeCheckoutDrawer();
     }
-    
+
     // Update drawer totals
     totalSubtotal.innerText = `${subtotal} ₸`;
     totalShipping.innerText = `${SHIPPING_COST} ₸`;
     const grandTotal = subtotal + SHIPPING_COST;
     totalGrand.innerText = `${grandTotal} ₸`;
-    
+
     // Update Submit button text
     const btnSubmit = document.getElementById('btn-submit-order');
     if (btnSubmit) {
         btnSubmit.querySelector('.btn-label').innerText = `Оформить заказ на ${grandTotal} ₸`;
     }
-    
+
     // Fill drawer items list
     cartItemsContainer.innerHTML = '';
     const cartTotals = document.querySelector('.cart-totals');
     const checkoutForm = document.getElementById('checkout-form');
-    
+
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = `<div class="empty-cart-message">Ваша корзина пуста. Выберите вкуснейший донер из меню!</div>`;
         if (cartTotals) cartTotals.classList.add('hidden');
@@ -891,7 +891,7 @@ function updateCartUI() {
         if (cartTotals) cartTotals.classList.remove('hidden');
         if (checkoutForm) checkoutForm.classList.remove('hidden');
     }
-    
+
     cart.forEach(item => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
@@ -912,43 +912,43 @@ function updateCartUI() {
 }
 
 // CHECKOUT DRAWER INTERACTIONS
-window.openCheckoutDrawer = function() {
+window.openCheckoutDrawer = function () {
     triggerHaptic();
     checkoutDrawer.classList.add('open');
     checkoutBackdrop.classList.add('open');
 };
 
-window.closeCheckoutDrawer = function() {
+window.closeCheckoutDrawer = function () {
     checkoutDrawer.classList.remove('open');
     checkoutBackdrop.classList.remove('open');
 };
 
 // SUBMIT ORDER (Trigger Checkout)
-window.submitOrder = function(event) {
+window.submitOrder = function (event) {
     event.preventDefault();
     triggerHaptic();
-    
+
     const inputName = document.getElementById('input-name').value.trim();
     const inputPhone = document.getElementById('input-phone').value.trim();
     const inputAddress = document.getElementById('input-address').value.trim();
     const inputKaspi = document.getElementById('input-kaspi').value.trim();
-    
+
     if (!inputName || !inputPhone || !inputAddress || !inputKaspi) {
         showToast("Заполните все обязательные поля!", "fa-solid fa-triangle-exclamation");
         return;
     }
-    
+
     // Generate order ID
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const orderId = `#KD-${randomNum}`;
-    
+
     // Calculate total price
     let subtotal = 0;
     cart.forEach(item => {
         subtotal += item.price * item.quantity;
     });
     const finalTotal = subtotal + SHIPPING_COST;
-    
+
     // Create Order Object
     const newOrder = {
         orderId: orderId,
@@ -964,23 +964,23 @@ window.submitOrder = function(event) {
         status: 'pending_confirm',
         createdAt: new Date().toISOString()
     };
-    
+
     // Add new order to the top of list
     orders.unshift(newOrder);
     saveOrders();
-    
+
     // Set selected order for status screen
     selectedOrderId = orderId;
-    
+
     // Animate loader inside button
     const submitBtn = document.getElementById('btn-submit-order');
     const label = submitBtn.querySelector('.btn-label');
     const spinner = submitBtn.querySelector('.btn-spinner');
-    
+
     label.classList.add('hidden');
     spinner.classList.remove('hidden');
     submitBtn.disabled = true;
-    
+
     // Sync order to Supabase if connected
     if (supabase) {
         supabase.from('orders').insert({
@@ -1000,7 +1000,7 @@ window.submitOrder = function(event) {
                 const dbOrder = data[0];
                 newOrder.id = dbOrder.id; // Save UUID
                 saveOrders();
-                
+
                 // Now insert items
                 const insertItems = newOrder.items.map(item => ({
                     order_id: dbOrder.id,
@@ -1011,7 +1011,7 @@ window.submitOrder = function(event) {
                     quantity: item.quantity,
                     emoji: item.emoji
                 }));
-                
+
                 supabase.from('order_items').insert(insertItems).then(({ error: itemsError }) => {
                     if (itemsError) {
                         console.error("Error inserting items to Supabase:", itemsError);
@@ -1023,7 +1023,7 @@ window.submitOrder = function(event) {
             }
         });
     }
-    
+
     setTimeout(() => {
         // Clear Cart
         cart = [];
@@ -1031,18 +1031,18 @@ window.submitOrder = function(event) {
         Object.keys(selectedOptionsState).forEach(itemId => {
             updateCatalogBtnState(itemId);
         });
-        
+
         // Reset button states
         label.classList.remove('hidden');
         spinner.classList.add('hidden');
         submitBtn.disabled = false;
-        
+
         closeCheckoutDrawer();
         showToast("Заказ успешно оформлен!", "fa-solid fa-circle-check");
-        
+
         // Save current profile to localStorage history
         saveCurrentProfile(inputName, inputPhone, inputAddress, inputKaspi);
-        
+
         // Load Status Screen
         renderStatusScreen();
         updateActiveOrderBanner();
@@ -1072,11 +1072,11 @@ function getActiveOrders() {
 async function checkExistingOrder() {
     loadOrders();
     initSupabase();
-    
+
     if (supabase) {
         await syncOrdersFromSupabase();
     }
-    
+
     const activeOrders = getActiveOrders();
     if (activeOrders.length > 0) {
         // Default to the first active order
@@ -1086,7 +1086,7 @@ async function checkExistingOrder() {
     } else {
         updateActiveOrderBanner();
     }
-    
+
     if (supabase) {
         subscribeToOrderUpdates();
     }
@@ -1096,19 +1096,19 @@ async function checkExistingOrder() {
 function updateActiveOrderBanner() {
     const banner = document.getElementById('active-order-banner');
     if (!banner) return;
-    
+
     const activeOrders = getActiveOrders();
-    
+
     if (activeOrders.length > 0) {
         banner.classList.remove('hidden');
         const bannerText = document.getElementById('banner-order-status');
         const bannerId = document.getElementById('banner-order-id');
         const icon = banner.querySelector('.banner-icon');
-        
+
         if (activeOrders.length === 1) {
             const singleOrder = activeOrders[0];
             bannerId.innerText = singleOrder.orderId;
-            
+
             const statusTranslations = {
                 'pending_confirm': 'Ожидает подтверждения кассиром',
                 'pending_payment': 'Ожидает оплаты по Kaspi',
@@ -1116,7 +1116,7 @@ function updateActiveOrderBanner() {
                 'delivering': 'Доставляется курьером'
             };
             bannerText.innerText = statusTranslations[singleOrder.status] || singleOrder.status;
-            
+
             // Update icon
             if (singleOrder.status === 'pending_confirm') icon.className = 'fa-solid fa-clock-rotate-left banner-icon';
             else if (singleOrder.status === 'pending_payment') icon.className = 'fa-solid fa-wallet banner-icon';
@@ -1132,7 +1132,7 @@ function updateActiveOrderBanner() {
     }
 }
 
-window.showActiveOrderScreen = function() {
+window.showActiveOrderScreen = function () {
     triggerHaptic();
     renderStatusScreen();
 };
@@ -1141,7 +1141,7 @@ window.showActiveOrderScreen = function() {
 function renderStatusScreen() {
     loadOrders();
     const activeOrders = getActiveOrders();
-    
+
     if (activeOrders.length === 0) {
         if (!selectedOrderId || !orders.some(o => o.orderId === selectedOrderId)) {
             if (orders.length > 0) {
@@ -1156,27 +1156,27 @@ function renderStatusScreen() {
     } else if (!selectedOrderId || !orders.some(o => o.orderId === selectedOrderId)) {
         selectedOrderId = activeOrders[0].orderId;
     }
-    
+
     const currentOrder = orders.find(o => o.orderId === selectedOrderId);
     if (!currentOrder) return;
-    
+
     menuScreen.classList.remove('active');
     statusScreen.classList.add('active');
-    
+
     // Display Active Orders Switcher (tabs) if there are multiple active orders
     const selector = document.getElementById('active-orders-selector');
     const tabsList = document.getElementById('orders-tabs-list');
-    
+
     // Filter orders to show in tab switcher (all active orders + currently viewed order)
     const switcherOrders = orders.filter(o => {
         const isActive = o.status !== 'completed' && o.status !== 'cancelled';
         return isActive || o.orderId === selectedOrderId;
     });
-    
+
     if (switcherOrders.length > 1) {
         selector.classList.remove('hidden');
         tabsList.innerHTML = '';
-        
+
         switcherOrders.forEach(o => {
             const statusLabels = {
                 'pending_confirm': 'Подтверждение',
@@ -1186,7 +1186,7 @@ function renderStatusScreen() {
                 'completed': 'Выполнен',
                 'cancelled': 'Отменен'
             };
-            
+
             const tab = document.createElement('button');
             tab.className = `order-tab ${o.orderId === selectedOrderId ? 'active' : ''}`;
             tab.innerHTML = `
@@ -1203,14 +1203,14 @@ function renderStatusScreen() {
     } else {
         selector.classList.add('hidden');
     }
-    
+
     // Display Order Meta
     document.getElementById('display-order-id').innerText = currentOrder.orderId;
     document.getElementById('client-sum-name').innerText = currentOrder.client.name;
     document.getElementById('client-sum-phone').innerText = currentOrder.client.phone;
     document.getElementById('client-sum-address').innerText = currentOrder.client.address;
     document.getElementById('client-sum-total').innerText = `${currentOrder.total} ₸`;
-    
+
     // Fill client order details card
     const itemsList = document.getElementById('client-ordered-items-list');
     itemsList.innerHTML = '';
@@ -1223,7 +1223,7 @@ function renderStatusScreen() {
         `;
         itemsList.appendChild(div);
     });
-    
+
     // Update Stepper Timelines & Animations
     updateTimelineVisuals(currentOrder);
 }
@@ -1231,7 +1231,7 @@ function renderStatusScreen() {
 // UPDATE TIMELINE STEPPER AND ANIMATIONS ACCORDING TO STATE
 function updateTimelineVisuals(order) {
     if (!order) return;
-    
+
     const steps = {
         'pending_confirm': 1,
         'pending_payment': 2,
@@ -1239,30 +1239,30 @@ function updateTimelineVisuals(order) {
         'delivering': 4,
         'completed': 5
     };
-    
+
     const currentStepNum = steps[order.status] || 1;
-    
+
     // Reset classes
     const stepIds = ['step-confirm', 'step-payment', 'step-preparing', 'step-delivering', 'step-completed'];
     stepIds.forEach((id, idx) => {
         const element = document.getElementById(id);
         if (!element) return;
-        
+
         element.classList.remove('active', 'completed');
-        
+
         if (idx + 1 < currentStepNum) {
             element.classList.add('completed');
         } else if (idx + 1 === currentStepNum) {
             element.classList.add('active');
         }
     });
-    
+
     // Detail descriptions
     document.getElementById('step-confirm-desc').innerText = order.status === 'pending_confirm' ? "Ожидаем звонка от кассира для подтверждения заказа" : "Заказ подтвержден кассиром";
     document.getElementById('step-payment-desc').innerText = order.status === 'pending_payment' ? "Ожидает удаленной оплаты по Kaspi" : (currentStepNum > 2 ? "Оплачено" : "Оплата не завершена");
     document.getElementById('step-preparing-desc').innerText = order.status === 'preparing' ? "Повар уже жарит мясо на вертеле" : (currentStepNum > 3 ? "Приготовлено" : "Ожидает сборки");
     document.getElementById('step-delivering-desc').innerText = order.status === 'delivering' ? "Курьер мчится по вашему адресу" : (currentStepNum > 4 ? "Доставлено" : "В очереди на доставку");
-    
+
     // Handle Interactive animations inside the Visual Box
     const confirmWrapper = document.getElementById('confirm-wrapper');
     const paymentWrapper = document.getElementById('payment-wrapper');
@@ -1270,14 +1270,14 @@ function updateTimelineVisuals(order) {
     const scooter = document.getElementById('scooter-wrapper');
     const completedWrapper = document.getElementById('completed-wrapper');
     const visualBg = document.getElementById('tracking-visual-bg');
-    
+
     confirmWrapper.style.display = 'none';
     paymentWrapper.style.display = 'none';
     cooking.style.display = 'none';
     scooter.style.display = 'none';
     completedWrapper.style.display = 'none';
     visualBg.style.background = 'radial-gradient(circle at 70% 30%, rgba(255, 90, 54, 0.1) 0%, rgba(0, 0, 0, 0) 70%)';
-    
+
     if (order.status === 'pending_confirm') {
         confirmWrapper.style.display = 'block';
     } else if (order.status === 'pending_payment') {
@@ -1290,7 +1290,7 @@ function updateTimelineVisuals(order) {
         completedWrapper.style.display = 'block';
         visualBg.style.background = 'radial-gradient(circle at 50% 50%, rgba(52, 199, 89, 0.15) 0%, rgba(0, 0, 0, 0) 75%)';
     }
-    
+
     // Kaspi Widget view toggle
     const kaspiWidget = document.getElementById('kaspi-payment-widget');
     if (order.status === 'pending_payment') {
@@ -1314,19 +1314,19 @@ document.getElementById('btn-back-to-menu').addEventListener('click', () => {
 // ORDER HISTORY DRAWER LOGIC
 // ========================================================
 
-window.openOrdersDrawer = function() {
+window.openOrdersDrawer = function () {
     triggerHaptic();
     renderOrdersDrawer();
     document.getElementById('orders-drawer').classList.add('open');
     document.getElementById('orders-backdrop').classList.add('open');
 };
 
-window.closeOrdersDrawer = function() {
+window.closeOrdersDrawer = function () {
     document.getElementById('orders-drawer').classList.remove('open');
     document.getElementById('orders-backdrop').classList.remove('open');
 };
 
-window.viewOrderFromHistory = function(orderId) {
+window.viewOrderFromHistory = function (orderId) {
     triggerHaptic();
     selectedOrderId = orderId;
     closeOrdersDrawer();
@@ -1338,7 +1338,7 @@ function formatOrderDate(isoString) {
     try {
         const date = new Date(isoString);
         const ruMonths = [
-            'янв', 'фев', 'мар', 'апр', 'мая', 'июн', 
+            'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
             'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
         ];
         const day = date.getDate();
@@ -1346,7 +1346,7 @@ function formatOrderDate(isoString) {
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         return `${day} ${month}, ${hours}:${minutes}`;
-    } catch(e) {
+    } catch (e) {
         return '';
     }
 }
@@ -1355,9 +1355,9 @@ function renderOrdersDrawer() {
     loadOrders();
     const content = document.getElementById('orders-history-content');
     if (!content) return;
-    
+
     content.innerHTML = '';
-    
+
     if (orders.length === 0) {
         content.innerHTML = `
             <div class="empty-cart-message">
@@ -1367,11 +1367,11 @@ function renderOrdersDrawer() {
         `;
         return;
     }
-    
+
     orders.forEach(order => {
         // Build items summary text
         const itemsSummary = order.items.map(item => `${item.name} (${item.selectedOption}) x${item.quantity}`).join(', ');
-        
+
         const statusLabels = {
             'pending_confirm': 'Подтверждение',
             'pending_payment': 'Оплата',
@@ -1380,7 +1380,7 @@ function renderOrdersDrawer() {
             'completed': 'Выполнен',
             'cancelled': 'Отменен'
         };
-        
+
         const card = document.createElement('div');
         card.className = 'order-history-card';
         card.innerHTML = `
@@ -1416,13 +1416,13 @@ function initSupabase() {
     // 1. Try production hardcoded variables
     let url = SUPABASE_URL;
     let key = SUPABASE_ANON_KEY;
-    
+
     // 2. Fallback to developer-configured settings in localStorage (useful for local sandbox testing)
     if (!url || !key) {
         url = localStorage.getItem('kd_sb_url') || '';
         key = localStorage.getItem('kd_sb_key') || '';
     }
-    
+
     if (url && key) {
         try {
             supabase = window.supabase.createClient(url, key);
@@ -1436,16 +1436,16 @@ function initSupabase() {
 async function syncOrdersFromSupabase() {
     if (!supabase) return;
     const tgId = currentUser ? String(currentUser.id) : 'guest';
-    
+
     try {
         const { data: dbOrders, error } = await supabase
             .from('orders')
             .select('*')
             .eq('telegram_id', tgId)
             .order('created_at', { ascending: false });
-            
+
         if (error) throw error;
-        
+
         if (dbOrders && dbOrders.length > 0) {
             const syncedOrders = [];
             for (const dbo of dbOrders) {
@@ -1454,7 +1454,7 @@ async function syncOrdersFromSupabase() {
                     .from('order_items')
                     .select('*')
                     .eq('order_id', dbo.id);
-                    
+
                 syncedOrders.push({
                     orderId: dbo.order_num,
                     id: dbo.id,
@@ -1478,7 +1478,7 @@ async function syncOrdersFromSupabase() {
                     createdAt: dbo.created_at
                 });
             }
-            
+
             orders = syncedOrders;
             saveOrders();
         }
@@ -1491,22 +1491,22 @@ let orderSubscription = null;
 
 function subscribeToOrderUpdates() {
     if (!supabase || orders.length === 0) return;
-    
+
     // Clean up previous channel if any
     if (orderSubscription) {
         supabase.removeChannel(orderSubscription);
     }
-    
+
     // Subscribe to order state updates
     orderSubscription = supabase.channel('client-orders-updates')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, async (payload) => {
             const updatedOrder = payload.new;
             console.log("Realtime order update from cashier:", updatedOrder);
-            
+
             // Check if this updated order belongs to the user
             const localOrderIdx = orders.findIndex(o => o.orderId === updatedOrder.order_num || o.id === updatedOrder.id);
             if (localOrderIdx === -1) return;
-            
+
             // If the updated order is currently viewed, fetch new items too (in case cashier edited items)
             if (selectedOrderId === updatedOrder.order_num) {
                 try {
@@ -1514,7 +1514,7 @@ function subscribeToOrderUpdates() {
                         .from('order_items')
                         .select('*')
                         .eq('order_id', updatedOrder.id);
-                        
+
                     orders = orders.map(o => {
                         if (o.orderId === updatedOrder.order_num) {
                             return {
@@ -1534,10 +1534,10 @@ function subscribeToOrderUpdates() {
                         }
                         return o;
                     });
-                    
+
                     saveOrders();
                     renderStatusScreen();
-                } catch(e) {
+                } catch (e) {
                     console.error("Error loading updated order items:", e);
                     // Fallback: just update status and total
                     updateLocalOrderStatusAndTotal(updatedOrder);
